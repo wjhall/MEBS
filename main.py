@@ -1,5 +1,5 @@
 # todo:
-#   select categories in transaction view
+#   select categories in transaction view, probable change to QSqlTableModel table generation required
 #   add budget view
 
 
