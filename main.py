@@ -11,14 +11,41 @@ from functools import partial
 class MEBS(QMainWindow):
 
     def __init__(self):
-        self.db = "C:\Users\whall\Documents\dev\MEBS\python\mydb.db"
+        self.db = ""
+        self.selectedAcc = '%'
         QMainWindow.__init__(self)
-        menu = getMenuBar(self)
-        self.TransTable = dfToQTab(getTransSQL('123std2', self.db))
+        self.drawLoad()
 
+    def drawLoad(self):
+        menu = getMenuBar(self)
         self.setMenuBar(menu)
 
         self.main = QWidget(self)
+        self.main.setMinimumSize(800, 600)
+
+        self.layout = QHBoxLayout()
+        button = (QPushButton("New"))
+        button.clicked.connect(self.newDF)
+        self.layout.addWidget(button)
+        button = (QPushButton("Load"))
+        button.clicked.connect(self.loadDB)
+        self.layout.addWidget(button)
+        self.main.setLayout(self.layout)
+        self.setCentralWidget(self.main)
+        self.show()
+
+    def updateTransTable(self, account):
+        self.selectedAcc = account
+        self.drawHome()
+
+    def drawHome(self):
+        menu = getMenuBar(self)
+        self.setMenuBar(menu)
+
+        self.main = QWidget(self)
+        self.main.setMinimumSize(800, 600)
+
+        self.TransTable = dfToQTab(getTransSQL(self.selectedAcc, self.db))
 
         self.AccBox = QGroupBox("Accounts", self.main)
         self.AccBox.setLayout(AccountsListVBox(self))
@@ -31,10 +58,23 @@ class MEBS(QMainWindow):
         self.setCentralWidget(self.main)
         self.show()
 
-    def updateTransTable(self, account):
-        print account
-        self.TransTable = dfToQTab(getTransSQL(account, self.db))
-        self.repaint()
+    def loadDB(self):
+        dialog = QFileDialog(self)
+        dialog.setFileMode(QFileDialog.AnyFile)
+        filename = dialog.getOpenFileName(filter="*.db")
+        self.db = filename[0]
+        self.drawHome()
+
+    def newDF(self):
+        dialog = QFileDialog(self)
+        dialog.setFileMode(QFileDialog.AnyFile)
+        filename = dialog.getSaveFileName(filter="*.db")
+        self.db = filename[0]
+        initTransTable(self.db)
+        initAccTable(self.db)
+        initEnvelopesTable(self.db)
+        initBudgetTable(self.db)
+        self.drawHome()
 
 
 def getMenuBar(parent):
@@ -83,14 +123,8 @@ def AccountsListVBox(parent):
         label = (QLabel(str(account[1])))
         vbox.addWidget(button)
         vbox.addWidget(label)
+    vbox.setAlignment(Qt.AlignTop)
     return vbox
-
-# initTransTable()
-# initAccTable()
-
-# addAccountSQL("123std2")
-# TransData = readQif(filename, '123Std')
-# insertTransSQL(TransData)
 
 app = QApplication(sys.argv)
 UI = MEBS()

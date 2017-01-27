@@ -13,7 +13,7 @@ def addAccountSQL(name, acctype, db):
 
 def getTransSQL(account, db):
     conn = sqlite3.connect(db)
-    sql = "Select * from Transactions where account='{}'".format(account)
+    sql = "Select * from Transactions where account LIKE '{}'".format(account)
     df = pd.read_sql_query(sql, conn)
     conn.close()
     return df
@@ -70,6 +70,16 @@ def initEnvelopesTable(db):
     subcategory text)''')
     conn.commit()
     conn.close()
+    initevelopes = [
+        ["Expenses", "Housing"],
+        ["Expenses", "Groceries"],
+        ["Expenses", "Utilities"],
+        ["Savings", "Holidays"],
+        ["Savings", "EmergencyFund"],
+        ["Savings", "ShinyThing"]
+    ]
+    for envs in initevelopes:
+        addEnvelope(db, envs[0], envs[1])
 
 
 def initBudgetTable(db):
@@ -81,10 +91,10 @@ def initBudgetTable(db):
     conn.close()
 
 
-def addEnvelope(db, category, subcategor):
+def addEnvelope(db, category, subcategory):
     conn = sqlite3.connect(db)
     c = conn.cursor()
-    sql = "Insert into Envelopes values (1, '{}', '{}')".format()
+    sql = "Insert into Envelopes values (1, '{}', '{}')".format(category, subcategory)
     c.execute(sql)
     conn.commit()
     conn.close()
