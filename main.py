@@ -1,3 +1,9 @@
+# todo:
+#   select categories in transaction view
+#   add budget view
+#   set account on importQIF
+
+
 import sqlite3
 import pandas as pd
 import sys
@@ -6,15 +12,23 @@ from PySide.QtGui import *
 from QIF_Handler import *
 from SQL_Handler import *
 from functools import partial
+import os.path
 
 
 class MEBS(QMainWindow):
 
     def __init__(self):
+        self.path = os.path.dirname(__file__)
         self.db = ""
+        if os.path.isfile(self.path + "\config.ini"):
+            with open(self.path + "\config.ini") as f:
+                self.db = f.readline()
         self.selectedAcc = '%'
         QMainWindow.__init__(self)
-        self.drawLoad()
+        if self.db == "":
+            self.drawLoad()
+        else:
+            self.drawHome()
 
     def drawLoad(self):
         self.setupMenuBar()
@@ -46,7 +60,7 @@ class MEBS(QMainWindow):
         self.TransTable = dfToQTab(getTransSQL(self.selectedAcc, self.db))
 
         self.AccBox = QGroupBox("Accounts", self.main)
-        self.AccBox.setLayout(AccountsListVBox(self))
+        self.AccBox.setLayout(self.AccountsListVBox())
 
         self.layout = QHBoxLayout()
         self.layout.addWidget(self.AccBox)
@@ -63,6 +77,7 @@ class MEBS(QMainWindow):
         if filename[0] == "":
             return
         self.db = filename[0]
+        self.setConfig()
         self.drawHome()
 
     def newDB(self):
@@ -76,6 +91,7 @@ class MEBS(QMainWindow):
         initAccTable(self.db)
         initEnvelopesTable(self.db)
         initBudgetTable(self.db)
+        self.setConfig()
         self.drawHome()
 
     def setupMenuBar(self):
@@ -94,6 +110,35 @@ class MEBS(QMainWindow):
         menu.addAction(quitmenu)
         self.setMenuBar(menu)
 
+    def AccountsListVBox(self):
+        vbox = QVBoxLayout()
+        conn = sqlite3.connect(self.db)
+        c = conn.cursor()
+        sql = "Select * from Accounts"
+        c.execute(sql)
+        accounts = c
+        for account in accounts:
+            button = (QPushButton(account[0]))
+            button.clicked.connect(partial(self.updateTransTable, account[0]))
+            label = (QLabel(str(account[1])))
+            vbox.addWidget(button)
+            vbox.addWidget(label)
+        button = (QPushButton("Add New Account"))
+        button.clicked.connect(self.newAccount)
+        vbox.addWidget(button)
+        vbox.setAlignment(Qt.AlignTop)
+        return vbox
+
+    def newAccount(self):
+        dialog = QInputDialog()
+        account = dialog.getText(self, "Add New Account", "Account Name")
+        self.selectedAcc = account[0]
+        addAccountSQL(self.selectedAcc, 'foo', self.db)
+        self.drawHome()
+
+    def setConfig(self):
+        with open(self.path + "\config.ini", 'w+') as f:
+            f.write(self.db)
 
 def getTabBar(parent):
     tabs = QTabWidget(parent)
@@ -120,23 +165,8 @@ def dfToQTab(df):
     return datatable
 
 
-def AccountsListVBox(parent):
-    vbox = QVBoxLayout()
-    conn = sqlite3.connect(parent.db)
-    c = conn.cursor()
-    sql = "Select * from Accounts"
-    c.execute(sql)
-    accounts = c
-    for account in accounts:
-        button = (QPushButton(account[0]))
-        button.clicked.connect(partial(parent.updateTransTable, account[0]))
-        label = (QLabel(str(account[1])))
-        vbox.addWidget(button)
-        vbox.addWidget(label)
-    vbox.setAlignment(Qt.AlignTop)
-    return vbox
-
-app = QApplication(sys.argv)
-UI = MEBS()
-app.exec_()
-sys.exit()
+if __name__ == "__main__":
+    app = QApplication(sys.argv)
+    UI = MEBS()
+    app.exec_()
+    sys.exit()
