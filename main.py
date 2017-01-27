@@ -8,6 +8,7 @@ import pandas as pd
 import sys
 from PySide.QtCore import *
 from PySide.QtGui import *
+from PySide.QtSql import *
 from QIF_Handler import *
 from SQL_Handler import *
 from functools import partial
@@ -57,6 +58,7 @@ class MEBS(QMainWindow):
         self.main.setMinimumSize(800, 600)
 
         self.TransTable = dfToQTab(getTransSQL(self.selectedAcc, self.db))
+        self.getTransTable()
 
         self.AccBox = QGroupBox("Accounts", self.main)
         self.AccBox.setLayout(self.AccountsListVBox())
@@ -144,6 +146,16 @@ class MEBS(QMainWindow):
         insertTransSQL(qif, self.db)
         updateAccSQLBalance(self.db)
         self.drawHome()
+
+    def getTransTable(self):
+        tempdb = QSqlDatabase.addDatabase("QSQLITE")
+        tempdb.setDatabaseName(self.db)
+        tempdb.open()
+        model = QSqlTableModel()
+        model.setTable("Transactions")
+        model.select()
+        view = QTableView.setModel(model)
+        return view
 
 
 def getTabBar(parent):
