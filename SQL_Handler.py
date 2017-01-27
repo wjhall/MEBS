@@ -102,3 +102,15 @@ def addEnvelope(db, category, subcategory):
 
 def editBudget(date, subcategory, budgeted):
     pass
+
+
+def getAccounts(db):
+    accounts = []
+    conn = sqlite3.connect(db)
+    c = conn.cursor()
+    sql = "Select * from Accounts"
+    c.execute(sql)
+    acc = c
+    for ac in acc:
+        accounts.append(ac)
+    return accounts

@@ -1,7 +1,6 @@
 # todo:
 #   select categories in transaction view
 #   add budget view
-#   set account on importQIF
 
 
 import sqlite3
@@ -103,7 +102,7 @@ class MEBS(QMainWindow):
         loadmenu.triggered.connect(self.loadDB)
         menu.addAction(loadmenu)
         QIFImport = QAction('Import QIF', self)
-        QIFImport.triggered.connect(lambda: importQIF(self))
+        QIFImport.triggered.connect(self.importQIF)
         menu.addAction(QIFImport)
         quitmenu = QAction('Quit', self)
         quitmenu.triggered.connect(QApplication.quit)
@@ -112,12 +111,7 @@ class MEBS(QMainWindow):
 
     def AccountsListVBox(self):
         vbox = QVBoxLayout()
-        conn = sqlite3.connect(self.db)
-        c = conn.cursor()
-        sql = "Select * from Accounts"
-        c.execute(sql)
-        accounts = c
-        for account in accounts:
+        for account in getAccounts(self.db):
             button = (QPushButton(account[0]))
             button.clicked.connect(partial(self.updateTransTable, account[0]))
             label = (QLabel(str(account[1])))
@@ -130,8 +124,7 @@ class MEBS(QMainWindow):
         return vbox
 
     def newAccount(self):
-        dialog = QInputDialog()
-        account = dialog.getText(self, "Add New Account", "Account Name")
+        account = QInputDialog.getText(self, "Add New Account", "Account Name")
         self.selectedAcc = account[0]
         addAccountSQL(self.selectedAcc, 'foo', self.db)
         self.drawHome()
@@ -140,18 +133,25 @@ class MEBS(QMainWindow):
         with open(self.path + "\config.ini", 'w+') as f:
             f.write(self.db)
 
+    def importQIF(self):
+        accountlist = [acc[0] for acc in getAccounts(self.db)]
+        account = QInputDialog.getItem(self, "Select account to import to", "Account", accountlist)
+        self.selectedAcc = account[0]
+        filename = QFileDialog.getOpenFileName(self)
+        if filename[0] == "":
+            return
+        qif = readQif(filename[0], self.selectedAcc)
+        insertTransSQL(qif, self.db)
+        updateAccSQLBalance(self.db)
+        self.drawHome
+
+
 def getTabBar(parent):
     tabs = QTabWidget(parent)
     tabs.addTab(parent.TransTable, "Transactions")
     tabs.addTab(QLabel("foo"), "Budget")
     tabs.addTab(QLabel("foo"), "Reports")
     return tabs
-
-
-def importQIF(parent):
-    filename = QFileDialog.getOpenFileName(parent)
-    qif = readQif(filename[0], "123std2")
-    insertTransSQL(qif, parent.db)
 
 
 def dfToQTab(df):
