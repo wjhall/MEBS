@@ -13,6 +13,7 @@ def addAccountSQL(name, acctype, db):
 
 def getTransSQL(account, db):
     conn = sqlite3.connect(db)
+    conn.text_factory = str
     sql = "Select * from Transactions where account LIKE '{}'".format(account)
     df = pd.read_sql_query(sql, conn)
     conn.close()
@@ -21,6 +22,7 @@ def getTransSQL(account, db):
 
 def insertTransSQL(df, db):
     conn = sqlite3.connect(db)
+    conn.text_factory = str
     df.to_sql("Transactions", conn, if_exists="append", index=False)
     conn.close()
 

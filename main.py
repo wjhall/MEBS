@@ -143,7 +143,7 @@ class MEBS(QMainWindow):
         qif = readQif(filename[0], self.selectedAcc)
         insertTransSQL(qif, self.db)
         updateAccSQLBalance(self.db)
-        self.drawHome
+        self.drawHome()
 
 
 def getTabBar(parent):
