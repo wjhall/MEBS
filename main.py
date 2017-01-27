@@ -17,15 +17,14 @@ class MEBS(QMainWindow):
         self.drawLoad()
 
     def drawLoad(self):
-        menu = getMenuBar(self)
-        self.setMenuBar(menu)
+        self.setupMenuBar()
 
         self.main = QWidget(self)
         self.main.setMinimumSize(800, 600)
 
         self.layout = QHBoxLayout()
         button = (QPushButton("New"))
-        button.clicked.connect(self.newDF)
+        button.clicked.connect(self.newDB)
         self.layout.addWidget(button)
         button = (QPushButton("Load"))
         button.clicked.connect(self.loadDB)
@@ -39,8 +38,7 @@ class MEBS(QMainWindow):
         self.drawHome()
 
     def drawHome(self):
-        menu = getMenuBar(self)
-        self.setMenuBar(menu)
+        self.setupMenuBar()
 
         self.main = QWidget(self)
         self.main.setMinimumSize(800, 600)
@@ -62,13 +60,17 @@ class MEBS(QMainWindow):
         dialog = QFileDialog(self)
         dialog.setFileMode(QFileDialog.AnyFile)
         filename = dialog.getOpenFileName(filter="*.db")
+        if filename[0] == "":
+            return
         self.db = filename[0]
         self.drawHome()
 
-    def newDF(self):
+    def newDB(self):
         dialog = QFileDialog(self)
         dialog.setFileMode(QFileDialog.AnyFile)
         filename = dialog.getSaveFileName(filter="*.db")
+        if filename[0] == "":
+            return
         self.db = filename[0]
         initTransTable(self.db)
         initAccTable(self.db)
@@ -76,13 +78,21 @@ class MEBS(QMainWindow):
         initBudgetTable(self.db)
         self.drawHome()
 
-
-def getMenuBar(parent):
-    menu = QMenuBar()
-    QIFImport = QAction('Import QIF', parent)
-    QIFImport.triggered.connect(lambda: importQIF(parent))
-    menu.addAction(QIFImport)
-    return menu
+    def setupMenuBar(self):
+        menu = QMenuBar()
+        newmenu = QAction('New', self)
+        newmenu.triggered.connect(self.newDB)
+        menu.addAction(newmenu)
+        loadmenu = QAction('Load', self)
+        loadmenu.triggered.connect(self.loadDB)
+        menu.addAction(loadmenu)
+        QIFImport = QAction('Import QIF', self)
+        QIFImport.triggered.connect(lambda: importQIF(self))
+        menu.addAction(QIFImport)
+        quitmenu = QAction('Quit', self)
+        quitmenu.triggered.connect(QApplication.quit)
+        menu.addAction(quitmenu)
+        self.setMenuBar(menu)
 
 
 def getTabBar(parent):
