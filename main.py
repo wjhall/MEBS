@@ -3,35 +3,60 @@ import pandas as pd
 import sys
 from PySide.QtCore import *
 from PySide.QtGui import *
+from QIF_Handler import *
+from SQL_Handler import *
+from functools import partial
 
 
 class MEBS(QMainWindow):
 
     def __init__(self):
+        self.db = "C:\Users\whall\Documents\dev\MEBS\python\mydb.db"
         QMainWindow.__init__(self)
-        menu = getMenuBar()
+        menu = getMenuBar(self)
+        self.TransTable = dfToQTab(getTransSQL('123std2', self.db))
+
         self.setMenuBar(menu)
 
         self.main = QWidget(self)
-        self.TransData = getTransSQL('123Std')
-        self.TransTable = dfToQTab(self.TransData)
 
         self.AccBox = QGroupBox("Accounts", self.main)
-        self.AccBox.setLayout(AccountsListVBox())
+        self.AccBox.setLayout(AccountsListVBox(self))
 
         self.layout = QHBoxLayout()
         self.layout.addWidget(self.AccBox)
-        self.layout.addWidget(self.TransTable)
+        self.layout.addWidget(getTabBar(self))
         self.main.setLayout(self.layout)
 
         self.setCentralWidget(self.main)
         self.show()
 
+    def updateTransTable(self, account):
+        print account
+        self.TransTable = dfToQTab(getTransSQL(account, self.db))
+        self.repaint()
 
-def getMenuBar():
+
+def getMenuBar(parent):
     menu = QMenuBar()
-    menu.addMenu("File")
+    QIFImport = QAction('Import QIF', parent)
+    QIFImport.triggered.connect(lambda: importQIF(parent))
+    menu.addAction(QIFImport)
     return menu
+
+
+def getTabBar(parent):
+    tabs = QTabWidget(parent)
+    tabs.addTab(parent.TransTable, "Transactions")
+    tabs.addTab(QLabel("foo"), "Budget")
+    tabs.addTab(QLabel("foo"), "Reports")
+    return tabs
+
+
+def importQIF(parent):
+    filename = QFileDialog.getOpenFileName(parent)
+    qif = readQif(filename[0], "123std2")
+    insertTransSQL(qif, parent.db)
 
 
 def dfToQTab(df):
@@ -45,119 +70,27 @@ def dfToQTab(df):
     return datatable
 
 
-def initTransTable():
-    conn = sqlite3.connect("C:/Users/whall/Documents/dev/MEBS/python/mydb.db")
-    c = conn.cursor()
-    c.execute('''Create Table if not exists Transactions (Date text, account text, \
-    payee text, memo text, cStatus integer, amount real, category text, flags text)''')
-    conn.commit()
-    conn.close()
-
-
-def initAccTable():
-    conn = sqlite3.connect("C:/Users/whall/Documents/dev/MEBS/python/mydb.db")
-    c = conn.cursor()
-    c.execute('''Create Table if not exists Accounts (Name text, Balance real)''')
-    conn.commit()
-    conn.close()
-
-
-def AccountsListVBox():
+def AccountsListVBox(parent):
     vbox = QVBoxLayout()
-    conn = sqlite3.connect("C:/Users/whall/Documents/dev/MEBS/python/mydb.db")
+    conn = sqlite3.connect(parent.db)
     c = conn.cursor()
     sql = "Select * from Accounts"
     c.execute(sql)
     accounts = c
     for account in accounts:
-        button = QPushButton(account[0])
-        label = QLabel(str(account[1]))
+        button = (QPushButton(account[0]))
+        button.clicked.connect(partial(parent.updateTransTable, account[0]))
+        label = (QLabel(str(account[1])))
         vbox.addWidget(button)
         vbox.addWidget(label)
     return vbox
 
-
-def updateAccSQLBalance():
-    conn = sqlite3.connect("C:/Users/whall/Documents/dev/MEBS/python/mydb.db")
-    c = conn.cursor()
-    sql = "Select Distinct Name from Accounts"
-    c.execute(sql)
-    accounts = c
-    balances = []
-    for account in accounts:
-        name = account[0]
-        sql = "Select Sum(amount) from Transactions where account='{}'".format(name)
-        c.execute(sql)
-        balance = round(c.fetchone()[0], 2)
-        balances.append([name, balance])
-    for account in balances:
-        name = account[0]
-        balance = account[1]
-        sql = "Update Accounts set Balance = {} where Name = '{}'".format(balance, name)
-        c.execute(sql)
-    conn.commit()
-    conn.close()
-
-
-def addAccountSQL(name):
-    conn = sqlite3.connect("C:/Users/whall/Documents/dev/MEBS/python/mydb.db")
-    c = conn.cursor()
-    sql = "Insert into Accounts values ('{}', 0)".format(name)
-    c.execute(sql)
-    conn.commit()
-    conn.close()
-
-
-def parseQifLine(line):
-    code = {
-        "D": "Date",
-        "T": "amount",
-        "P": "Payee"
-    }.get(line[0], "None")
-    if code == "Amount":
-        value = float(line[1:])
-    else:
-        value = line[1:]
-    return {code: value}
-
-
-def readQif(filename, account):
-    with open(filename) as f:
-        transactions = f.read().split("\n^\n")
-        df = pd.DataFrame()
-        for transaction in transactions:
-            transdict = {}
-            for line in transaction.split("\n"):
-                transdict.update(parseQifLine(line))
-            df = df.append(transdict, ignore_index=True)
-    df["account"] = account
-    df.drop(("None"), axis=1, inplace=True)
-    return df
-
-
-def getTransSQL(account):
-    conn = sqlite3.connect("C:/Users/whall/Documents/dev/MEBS/python/mydb.db")
-    sql = "Select * from Transactions where account='{}'".format(account)
-    df = pd.read_sql_query(sql, conn)
-    conn.close()
-    return df
-
-
-def insertTransSQL(df):
-    conn = sqlite3.connect("C:/Users/whall/Documents/dev/MEBS/python/mydb.db")
-    df.to_sql("Transactions", conn, if_exists="append", index=False)
-    conn.close()
-    return
-
-filename = "C:/Users/whall/Documents/dev/MEBS/python/example.qif"
-
 # initTransTable()
 # initAccTable()
 
-# addAccountSQL("123Std")
+# addAccountSQL("123std2")
 # TransData = readQif(filename, '123Std')
 # insertTransSQL(TransData)
-# updateAccSQLBalance()
 
 app = QApplication(sys.argv)
 UI = MEBS()
