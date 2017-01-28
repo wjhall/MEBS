@@ -1,23 +1,11 @@
 import sqlite3
 import pandas as pd
+from PySide.QtSql import *
 
 
-def addAccountSQL(name, acctype, db):
-    conn = sqlite3.connect(db)
-    c = conn.cursor()
+def addAccountSQL(name, acctype, parent):
     sql = "Insert into Accounts values ('{}', 0, '{}')".format(name, acctype)
-    c.execute(sql)
-    conn.commit()
-    conn.close()
-
-
-def getTransSQL(account, db):
-    conn = sqlite3.connect(db)
-    conn.text_factory = str
-    sql = "Select * from Transactions where account LIKE '{}'".format(account)
-    df = pd.read_sql_query(sql, conn)
-    conn.close()
-    return df
+    query = QSqlQuery(sql)
 
 
 def insertTransSQL(df, db):
@@ -27,21 +15,28 @@ def insertTransSQL(df, db):
     conn.close()
 
 
-def initTransTable(db):
-    conn = sqlite3.connect(db)
-    c = conn.cursor()
-    c.execute('''Create Table if not exists Transactions (Date text, account text, \
-    payee text, memo text, cStatus integer, amount real, category text, flags text)''')
-    conn.commit()
-    conn.close()
-
-
-def initAccTable(db):
-    conn = sqlite3.connect(db)
-    c = conn.cursor()
-    c.execute('''Create Table if not exists Accounts (Name text, Balance real, type text)''')
-    conn.commit()
-    conn.close()
+def initNewDB():
+    sql = '''Create Table if not exists Transactions (Date text, account text, \
+    payee text, memo text, cStatus integer, amount real, category text, flags text)'''
+    query = QSqlQuery(sql)
+    sql = '''Create Table if not exists Accounts (Name text, Balance real, type text)'''
+    query = QSqlQuery(sql)
+    sql = '''Create Table if not exists Envelopes (active integer, category text, \
+    subcategory text)'''
+    query = QSqlQuery(sql)
+    initevelopes = [
+        ["Expenses", "Housing"],
+        ["Expenses", "Groceries"],
+        ["Expenses", "Utilities"],
+        ["Savings", "Holidays"],
+        ["Savings", "EmergencyFund"],
+        ["Savings", "ShinyThing"]
+    ]
+    for envs in initevelopes:
+        addEnvelope(envs[0], envs[1])
+    sql='''Create Table if not exists Budget (date text, subcategory text, \
+    budgeted real)'''
+    query = QSqlQuery(sql)
 
 
 def updateAccSQLBalance(db):
@@ -65,41 +60,9 @@ def updateAccSQLBalance(db):
     conn.close()
 
 
-def initEnvelopesTable(db):
-    conn = sqlite3.connect(db)
-    c = conn.cursor()
-    c.execute('''Create Table if not exists Envelopes (active integer, category text, \
-    subcategory text)''')
-    conn.commit()
-    conn.close()
-    initevelopes = [
-        ["Expenses", "Housing"],
-        ["Expenses", "Groceries"],
-        ["Expenses", "Utilities"],
-        ["Savings", "Holidays"],
-        ["Savings", "EmergencyFund"],
-        ["Savings", "ShinyThing"]
-    ]
-    for envs in initevelopes:
-        addEnvelope(db, envs[0], envs[1])
-
-
-def initBudgetTable(db):
-    conn = sqlite3.connect(db)
-    c = conn.cursor()
-    c.execute('''Create Table if not exists Budget (date text, subcategory text, \
-    budgeted real)''')
-    conn.commit()
-    conn.close()
-
-
-def addEnvelope(db, category, subcategory):
-    conn = sqlite3.connect(db)
-    c = conn.cursor()
+def addEnvelope(category, subcategory):
     sql = "Insert into Envelopes values (1, '{}', '{}')".format(category, subcategory)
-    c.execute(sql)
-    conn.commit()
-    conn.close()
+    query = QSqlQuery(sql)
 
 
 def editBudget(date, subcategory, budgeted):

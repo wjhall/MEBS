@@ -28,7 +28,12 @@ class MEBS(QMainWindow):
         if self.db == "":
             self.drawLoad()
         else:
+            self.openDB()
             self.drawHome()
+    def openDB(self):
+        self.tempdb = QSqlDatabase.addDatabase("QSQLITE")
+        self.tempdb.setDatabaseName(self.db)
+        self.tempdb.open()
 
     def drawLoad(self):
         self.setupMenuBar()
@@ -57,8 +62,8 @@ class MEBS(QMainWindow):
         self.main = QWidget(self)
         self.main.setMinimumSize(800, 600)
 
-        self.TransTable = dfToQTab(getTransSQL(self.selectedAcc, self.db))
-        self.getTransTable()
+        #self.TransTable = dfToQTab(getTransSQL(self.selectedAcc, self.db))
+        self.TransTable = self.getTransTable()
 
         self.AccBox = QGroupBox("Accounts", self.main)
         self.AccBox.setLayout(self.AccountsListVBox())
@@ -78,6 +83,7 @@ class MEBS(QMainWindow):
         if filename[0] == "":
             return
         self.db = filename[0]
+        self.openDB()
         self.setConfig()
         self.drawHome()
 
@@ -88,10 +94,8 @@ class MEBS(QMainWindow):
         if filename[0] == "":
             return
         self.db = filename[0]
-        initTransTable(self.db)
-        initAccTable(self.db)
-        initEnvelopesTable(self.db)
-        initBudgetTable(self.db)
+        initNewDB()
+        self.openDB()
         self.setConfig()
         self.drawHome()
 
@@ -148,13 +152,11 @@ class MEBS(QMainWindow):
         self.drawHome()
 
     def getTransTable(self):
-        tempdb = QSqlDatabase.addDatabase("QSQLITE")
-        tempdb.setDatabaseName(self.db)
-        tempdb.open()
         model = QSqlTableModel()
         model.setTable("Transactions")
         model.select()
-        view = QTableView.setModel(model)
+        view = QTableView()
+        view.setModel(model)
         return view
 
 
@@ -164,17 +166,6 @@ def getTabBar(parent):
     tabs.addTab(QLabel("foo"), "Budget")
     tabs.addTab(QLabel("foo"), "Reports")
     return tabs
-
-
-def dfToQTab(df):
-    datatable = QTableWidget()
-    datatable.setColumnCount(len(df.columns))
-    datatable.setRowCount(len(df.index))
-    for i in range(len(df.index)):
-        for j in range(len(df.columns)):
-            datatable.setItem(i, j, QTableWidgetItem(str(df.iat[i, j])))
-    datatable.setHorizontalHeaderLabels(df.columns)
-    return datatable
 
 
 if __name__ == "__main__":
