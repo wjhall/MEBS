@@ -94,8 +94,8 @@ class MEBS(QMainWindow):
         if filename[0] == "":
             return
         self.db = filename[0]
-        initNewDB()
         self.openDB()
+        initNewDB(self)
         self.setConfig()
         self.drawHome()
 
@@ -132,7 +132,7 @@ class MEBS(QMainWindow):
     def newAccount(self):
         account = QInputDialog.getText(self, "Add New Account", "Account Name")
         self.selectedAcc = account[0]
-        addAccountSQL(self.selectedAcc, 'foo', self.db)
+        addAccountSQL(self.selectedAcc, 'foo', self)
         self.drawHome()
 
     def setConfig(self):

@@ -5,7 +5,7 @@ from PySide.QtSql import *
 
 def addAccountSQL(name, acctype, parent):
     sql = "Insert into Accounts values ('{}', 0, '{}')".format(name, acctype)
-    query = QSqlQuery(sql)
+    query = QSqlQuery(sql, parent.tempdb)
 
 
 def insertTransSQL(df, db):
@@ -15,15 +15,15 @@ def insertTransSQL(df, db):
     conn.close()
 
 
-def initNewDB():
+def initNewDB(parent):
     sql = '''Create Table if not exists Transactions (Date text, account text, \
     payee text, memo text, cStatus integer, amount real, category text, flags text)'''
-    query = QSqlQuery(sql)
+    query = QSqlQuery(sql, parent.tempdb)
     sql = '''Create Table if not exists Accounts (Name text, Balance real, type text)'''
-    query = QSqlQuery(sql)
+    query = QSqlQuery(sql, parent.tempdb)
     sql = '''Create Table if not exists Envelopes (active integer, category text, \
     subcategory text)'''
-    query = QSqlQuery(sql)
+    query = QSqlQuery(sql, parent.tempdb)
     initevelopes = [
         ["Expenses", "Housing"],
         ["Expenses", "Groceries"],
@@ -33,10 +33,10 @@ def initNewDB():
         ["Savings", "ShinyThing"]
     ]
     for envs in initevelopes:
-        addEnvelope(envs[0], envs[1])
+        addEnvelope(parent, envs[0], envs[1])
     sql='''Create Table if not exists Budget (date text, subcategory text, \
     budgeted real)'''
-    query = QSqlQuery(sql)
+    query = QSqlQuery(sql, parent.tempdb)
 
 
 def updateAccSQLBalance(db):
@@ -60,9 +60,9 @@ def updateAccSQLBalance(db):
     conn.close()
 
 
-def addEnvelope(category, subcategory):
+def addEnvelope(parent, category, subcategory):
     sql = "Insert into Envelopes values (1, '{}', '{}')".format(category, subcategory)
-    query = QSqlQuery(sql)
+    query = QSqlQuery(sql, parent.tempdb)
 
 
 def editBudget(date, subcategory, budgeted):
