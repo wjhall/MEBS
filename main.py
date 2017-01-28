@@ -1,6 +1,7 @@
 # todo:
 #   select categories in transaction view, probable change to QSqlTableModel table generation required
 #   add budget view
+#   fix qif import
 
 
 import sqlite3
@@ -117,7 +118,7 @@ class MEBS(QMainWindow):
 
     def AccountsListVBox(self):
         vbox = QVBoxLayout()
-        for account in getAccounts(self.db):
+        for account in getAccounts(self):
             button = (QPushButton(account[0]))
             button.clicked.connect(partial(self.updateTransTable, account[0]))
             label = (QLabel(str(account[1])))
@@ -140,15 +141,15 @@ class MEBS(QMainWindow):
             f.write(self.db)
 
     def importQIF(self):
-        accountlist = [acc[0] for acc in getAccounts(self.db)]
+        accountlist = [acc[0] for acc in getAccounts(self)]
         account = QInputDialog.getItem(self, "Select account to import to", "Account", accountlist)
         self.selectedAcc = account[0]
         filename = QFileDialog.getOpenFileName(self)
         if filename[0] == "":
             return
-        qif = readQif(filename[0], self.selectedAcc)
-        insertTransSQL(qif, self.db)
-        updateAccSQLBalance(self.db)
+        #qif = readQif(filename[0], self.selectedAcc)
+        insertTransSQL(filename[0], self)
+        updateAccSQLBalance(self)
         self.drawHome()
 
     def getTransTable(self):

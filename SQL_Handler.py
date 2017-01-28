@@ -8,7 +8,7 @@ def addAccountSQL(name, acctype, parent):
     query = QSqlQuery(sql, parent.tempdb)
 
 
-def insertTransSQL(df, db):
+def insertTransSQL(df, db): # update
     conn = sqlite3.connect(db)
     conn.text_factory = str
     df.to_sql("Transactions", conn, if_exists="append", index=False)
@@ -39,25 +39,23 @@ def initNewDB(parent):
     query = QSqlQuery(sql, parent.tempdb)
 
 
-def updateAccSQLBalance(db):
-    conn = sqlite3.connect(db)
-    c = conn.cursor()
+def updateAccSQLBalance(parent): # update
     sql = "Select Name from Accounts"
-    df = pd.read_sql_query(sql, conn)
-    accounts = list(df["Name"])
+    query = QSqlQuery(sql, parent.tempdb)
+    accounts = []
+    while query.next(): accounts.append(query.value(0))
     balances = []
     for account in accounts:
         sql = "Select Sum(amount) from Transactions where account='{}'".format(account)
-        c.execute(sql)
-        balance = round(c.fetchone()[0], 2)
+        query = QSqlQuery(sql, parent.tempdb)
+        print query.value(0)
+        balance = round(query.value(0), 2)
         balances.append([account, balance])
     for account in balances:
         name = account[0]
         balance = account[1]
         sql = "Update Accounts set Balance = {} where Name = '{}'".format(balance, name)
-        c.execute(sql)
-    conn.commit()
-    conn.close()
+        query = QSqlQuery(sql, parent.tempdb)
 
 
 def addEnvelope(parent, category, subcategory):
@@ -69,13 +67,10 @@ def editBudget(date, subcategory, budgeted):
     pass
 
 
-def getAccounts(db):
+def getAccounts(parent):
     accounts = []
-    conn = sqlite3.connect(db)
-    c = conn.cursor()
-    sql = "Select * from Accounts"
-    c.execute(sql)
-    acc = c
-    for ac in acc:
-        accounts.append(ac)
+    sql = "Select Name, Balance from Accounts"
+    query = QSqlQuery(sql, parent.tempdb)
+    while query.next():
+        accounts.append([query.value(0),query.value(1)])
     return accounts
