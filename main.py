@@ -147,7 +147,6 @@ class MEBS(QMainWindow):
         filename = QFileDialog.getOpenFileName(self)
         if filename[0] == "":
             return
-        #qif = readQif(filename[0], self.selectedAcc)
         insertTransSQL(filename[0], self)
         updateAccSQLBalance(self)
         self.drawHome()
@@ -155,6 +154,8 @@ class MEBS(QMainWindow):
     def getTransTable(self):
         model = QSqlTableModel()
         model.setTable("Transactions")
+        if self.selectedAcc!="%":
+            model.setFilter("account='{}'".format(self.selectedAcc))
         model.select()
         view = QTableView()
         view.setModel(model)

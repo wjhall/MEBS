@@ -1,5 +1,6 @@
 import sqlite3
 import pandas as pd
+from QIF_Handler import *
 from PySide.QtSql import *
 
 
@@ -8,11 +9,22 @@ def addAccountSQL(name, acctype, parent):
     query = QSqlQuery(sql, parent.tempdb)
 
 
-def insertTransSQL(df, db): # update
-    conn = sqlite3.connect(db)
-    conn.text_factory = str
-    df.to_sql("Transactions", conn, if_exists="append", index=False)
-    conn.close()
+def insertTransSQL(filename, parent): # update
+    df = readQif(filename, parent.selectedAcc)
+    colList= list(df.columns.values)
+    sql = "Insert into Transactions ({}) values ({})"
+    headers = ", ".join([i for i in colList])
+    blanks = ", ".join(["?" for i in colList])
+    sql = sql.format(headers, blanks)
+    query = QSqlQuery(parent.tempdb)
+    query.prepare(sql)
+    for cols in colList:
+        query.addBindValue(df[cols].tolist())
+    query.execBatch()
+    # conn = sqlite3.connect(db)
+    # conn.text_factory = str
+    # df.to_sql("Transactions", conn, if_exists="append", index=False)
+    # conn.close()
 
 
 def initNewDB(parent):
@@ -39,7 +51,7 @@ def initNewDB(parent):
     query = QSqlQuery(sql, parent.tempdb)
 
 
-def updateAccSQLBalance(parent): # update
+def updateAccSQLBalance(parent):
     sql = "Select Name from Accounts"
     query = QSqlQuery(sql, parent.tempdb)
     accounts = []
@@ -48,9 +60,10 @@ def updateAccSQLBalance(parent): # update
     for account in accounts:
         sql = "Select Sum(amount) from Transactions where account='{}'".format(account)
         query = QSqlQuery(sql, parent.tempdb)
-        print query.value(0)
-        balance = round(query.value(0), 2)
-        balances.append([account, balance])
+        query.next()
+        if query.value(0) != "":
+            balance = round(query.value(0), 2)
+            balances.append([account, balance])
     for account in balances:
         name = account[0]
         balance = account[1]
