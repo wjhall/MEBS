@@ -45,8 +45,8 @@ def initNewDB(parent):
     ]
     for envs in initevelopes:
         addEnvelope(parent, envs[0], envs[1])
-    sql = '''Create Table if not exists Budget (date text, subcategory integer, \
-    budgeted real)'''
+    sql = '''Create Table if not exists Budget (Month Date, subcategory integer, \
+    budgeted real, actual real)'''
     query = QSqlQuery(sql, parent.tempdb)
 
 
@@ -76,7 +76,20 @@ def addEnvelope(parent, category, subcategory):
     query = QSqlQuery(sql, parent.tempdb)
 
 
-def editBudget(date, subcategory, budgeted):
+def addBudgetMonth(parent, month):
+    sql = "Select * from Envelopes WHERE active=1"
+    query = QSqlQuery(sql, parent.tempdb)
+    envelopes = []
+    while query.next():
+        envelopes.append(query.value(0))
+    print envelopes
+    for envs in envelopes:
+        sql = "Insert into Budget (Month, subcategory, budgeted, actual) \
+        VALUES ({},{},0,0)".format(month, envs)
+        query = QSqlQuery(sql, parent.tempdb)
+
+
+def updateBudgetValues(date, subcategory, budgeted):
     pass
 
 

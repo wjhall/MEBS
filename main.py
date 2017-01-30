@@ -31,6 +31,7 @@ class MEBS(QMainWindow):
         else:
             self.openDB()
             self.drawHome()
+            addBudgetMonth(self, "2016-12-01")
 
     def openDB(self):
         self.tempdb = QSqlDatabase.addDatabase("QSQLITE")
