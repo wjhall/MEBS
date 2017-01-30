@@ -1,5 +1,7 @@
 # todo:
 #   add budget view
+#   add budget items
+#   add reports
 
 
 import sqlite3
@@ -161,10 +163,21 @@ class MEBS(QMainWindow):
         view.setItemDelegate(QSqlRelationalDelegate(view))
         return view
 
+    def getBudgetTable(self):
+        model = QSqlQueryModel()
+        sql = "Select Envelopes.subcategory, sum(Transactions.amount) as Total\
+            FROM Transactions \
+            JOIN Envelopes on Envelopes.ID = Transactions.category \
+            GROUP by Envelopes.subcategory"
+        model.setQuery(sql)
+        view = QTableView()
+        view.setModel(model)
+        return view
+
     def getTabBar(self):
         tabs = QTabWidget(self)
         tabs.addTab(self.getTransTable(), "Transactions")
-        tabs.addTab(QLabel("foo"), "Budget")
+        tabs.addTab(self.getBudgetTable(), "Budget")
         tabs.addTab(QLabel("foo"), "Reports")
         return tabs
 

@@ -54,7 +54,8 @@ def updateAccSQLBalance(parent):
     sql = "Select Name from Accounts"
     query = QSqlQuery(sql, parent.tempdb)
     accounts = []
-    while query.next(): accounts.append(query.value(0))
+    while query.next():
+        accounts.append(query.value(0))
     balances = []
     for account in accounts:
         sql = "Select Sum(amount) from Transactions where account='{}'".format(account)
