@@ -24,5 +24,6 @@ def readQif(filename, account):
                 transdict.update(parseQifLine(line))
             df = df.append(transdict, ignore_index=True)
     df["account"] = account
+    df["category"] = 1
     df.drop(("None"), axis=1, inplace=True)
     return df

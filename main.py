@@ -1,7 +1,5 @@
 # todo:
-#   select categories in transaction view, probable change to QSqlTableModel table generation required
 #   add budget view
-#   fix qif import
 
 
 import sqlite3
@@ -31,6 +29,7 @@ class MEBS(QMainWindow):
         else:
             self.openDB()
             self.drawHome()
+
     def openDB(self):
         self.tempdb = QSqlDatabase.addDatabase("QSQLITE")
         self.tempdb.setDatabaseName(self.db)
@@ -63,15 +62,12 @@ class MEBS(QMainWindow):
         self.main = QWidget(self)
         self.main.setMinimumSize(800, 600)
 
-        #self.TransTable = dfToQTab(getTransSQL(self.selectedAcc, self.db))
-        self.TransTable = self.getTransTable()
-
         self.AccBox = QGroupBox("Accounts", self.main)
         self.AccBox.setLayout(self.AccountsListVBox())
 
         self.layout = QHBoxLayout()
         self.layout.addWidget(self.AccBox)
-        self.layout.addWidget(getTabBar(self))
+        self.layout.addWidget(self.getTabBar())
         self.main.setLayout(self.layout)
 
         self.setCentralWidget(self.main)
@@ -144,7 +140,8 @@ class MEBS(QMainWindow):
         accountlist = [acc[0] for acc in getAccounts(self)]
         account = QInputDialog.getItem(self, "Select account to import to", "Account", accountlist)
         self.selectedAcc = account[0]
-        filename = QFileDialog.getOpenFileName(self)
+        dialog = QFileDialog(self)
+        filename = dialog.getOpenFileName(filter="*.qif")
         if filename[0] == "":
             return
         insertTransSQL(filename[0], self)
@@ -152,22 +149,24 @@ class MEBS(QMainWindow):
         self.drawHome()
 
     def getTransTable(self):
-        model = QSqlTableModel()
+        model = QSqlRelationalTableModel()
         model.setTable("Transactions")
-        if self.selectedAcc!="%":
+        model.setRelation(7, QSqlRelation("Envelopes", "ID", "subcategory"))
+        model.setEditStrategy(QSqlTableModel.OnFieldChange)
+        if self.selectedAcc != "%":
             model.setFilter("account='{}'".format(self.selectedAcc))
         model.select()
         view = QTableView()
         view.setModel(model)
+        view.setItemDelegate(QSqlRelationalDelegate(view))
         return view
 
-
-def getTabBar(parent):
-    tabs = QTabWidget(parent)
-    tabs.addTab(parent.TransTable, "Transactions")
-    tabs.addTab(QLabel("foo"), "Budget")
-    tabs.addTab(QLabel("foo"), "Reports")
-    return tabs
+    def getTabBar(self):
+        tabs = QTabWidget(self)
+        tabs.addTab(self.getTransTable(), "Transactions")
+        tabs.addTab(QLabel("foo"), "Budget")
+        tabs.addTab(QLabel("foo"), "Reports")
+        return tabs
 
 
 if __name__ == "__main__":

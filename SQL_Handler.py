@@ -5,48 +5,47 @@ from PySide.QtSql import *
 
 
 def addAccountSQL(name, acctype, parent):
-    sql = "Insert into Accounts values ('{}', 0, '{}')".format(name, acctype)
+    sql = "Insert into Accounts (Name, Balance, Type) values ('{}', 0, '{}')".format(name, acctype)
     query = QSqlQuery(sql, parent.tempdb)
 
 
-def insertTransSQL(filename, parent): # update
+def insertTransSQL(filename, parent):
     df = readQif(filename, parent.selectedAcc)
-    colList= list(df.columns.values)
+    colList = list(df.columns.values)
     sql = "Insert into Transactions ({}) values ({})"
     headers = ", ".join([i for i in colList])
     blanks = ", ".join(["?" for i in colList])
     sql = sql.format(headers, blanks)
+    parent.tempdb.transaction()
     query = QSqlQuery(parent.tempdb)
     query.prepare(sql)
     for cols in colList:
         query.addBindValue(df[cols].tolist())
     query.execBatch()
-    # conn = sqlite3.connect(db)
-    # conn.text_factory = str
-    # df.to_sql("Transactions", conn, if_exists="append", index=False)
-    # conn.close()
+    parent.tempdb.commit()
 
 
 def initNewDB(parent):
-    sql = '''Create Table if not exists Transactions (Date text, account text, \
+    sql = '''Create Table if not exists Transactions (ID integer PRIMARY KEY, Date text, account text, \
     payee text, memo text, cStatus integer, amount real, category text, flags text)'''
     query = QSqlQuery(sql, parent.tempdb)
-    sql = '''Create Table if not exists Accounts (Name text, Balance real, type text)'''
+    sql = '''Create Table if not exists Accounts (ID integer PRIMARY KEY, Name text, Balance real, type text)'''
     query = QSqlQuery(sql, parent.tempdb)
-    sql = '''Create Table if not exists Envelopes (active integer, category text, \
+    sql = '''Create Table if not exists Envelopes (ID integer PRIMARY KEY, active integer, category text, \
     subcategory text)'''
     query = QSqlQuery(sql, parent.tempdb)
     initevelopes = [
+        ["None", "None"],
         ["Expenses", "Housing"],
         ["Expenses", "Groceries"],
         ["Expenses", "Utilities"],
         ["Savings", "Holidays"],
         ["Savings", "EmergencyFund"],
-        ["Savings", "ShinyThing"]
+        ["Savings", "ShinyThing"],
     ]
     for envs in initevelopes:
         addEnvelope(parent, envs[0], envs[1])
-    sql='''Create Table if not exists Budget (date text, subcategory text, \
+    sql = '''Create Table if not exists Budget (date text, subcategory text, \
     budgeted real)'''
     query = QSqlQuery(sql, parent.tempdb)
 
@@ -72,7 +71,7 @@ def updateAccSQLBalance(parent):
 
 
 def addEnvelope(parent, category, subcategory):
-    sql = "Insert into Envelopes values (1, '{}', '{}')".format(category, subcategory)
+    sql = "Insert into Envelopes (active, category, subcategory) values (1, '{}', '{}')".format(category, subcategory)
     query = QSqlQuery(sql, parent.tempdb)
 
 
@@ -85,5 +84,5 @@ def getAccounts(parent):
     sql = "Select Name, Balance from Accounts"
     query = QSqlQuery(sql, parent.tempdb)
     while query.next():
-        accounts.append([query.value(0),query.value(1)])
+        accounts.append([query.value(0), query.value(1)])
     return accounts
