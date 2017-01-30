@@ -26,7 +26,7 @@ def insertTransSQL(filename, parent):
 
 
 def initNewDB(parent):
-    sql = '''Create Table if not exists Transactions (ID integer PRIMARY KEY, Date text, account text, \
+    sql = '''Create Table if not exists Transactions (ID integer PRIMARY KEY, TransDate DATE, account text, \
     payee text, memo text, cStatus integer, amount real, category text, flags text)'''
     query = QSqlQuery(sql, parent.tempdb)
     sql = '''Create Table if not exists Accounts (ID integer PRIMARY KEY, Name text, Balance real, type text)'''
@@ -45,7 +45,7 @@ def initNewDB(parent):
     ]
     for envs in initevelopes:
         addEnvelope(parent, envs[0], envs[1])
-    sql = '''Create Table if not exists Budget (date text, subcategory text, \
+    sql = '''Create Table if not exists Budget (date text, subcategory integer, \
     budgeted real)'''
     query = QSqlQuery(sql, parent.tempdb)
 

@@ -165,10 +165,17 @@ class MEBS(QMainWindow):
 
     def getBudgetTable(self):
         model = QSqlQueryModel()
-        sql = "Select Envelopes.subcategory, sum(Transactions.amount) as Total\
-            FROM Transactions \
-            JOIN Envelopes on Envelopes.ID = Transactions.category \
-            GROUP by Envelopes.subcategory"
+        sql = "Select Envelopes.category, Envelopes.subcategory, foo.Total\
+            FROM Envelopes \
+            LEFT OUTER JOIN ( \
+                SELECT category, sum(amount) as Total \
+                FROM Transactions \
+                WHERE TransDate > '2016-12-31' \
+                GROUP BY category\
+            ) as foo \
+            ON Envelopes.ID = foo.category \
+            GROUP BY Envelopes.subcategory \
+            ORDER BY Envelopes.category, Envelopes.subcategory"
         model.setQuery(sql)
         view = QTableView()
         view.setModel(model)

@@ -1,13 +1,16 @@
 import pandas as pd
+import datetime as dt
 
 
 def parseQifLine(line):
     code = {
-        "D": "Date",
+        "D": "TransDate",
         "T": "amount",
         "P": "Payee"
     }.get(line[0], "None")
-    if code == "Amount":
+    if code == "TransDate":
+        value = dt.datetime.strftime(dt.datetime.strptime(line[1:], "%d/%m/%Y"), "%Y-%m-%d")
+    elif code == "Amount":
         value = float(line[1:])
     else:
         value = line[1:]
