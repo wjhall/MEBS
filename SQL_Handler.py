@@ -17,7 +17,8 @@ def addAccountSQL(name, acctype, parent):
 
 
 def insertTransSQL(filename, parent):
-    df = readQif(filename, parent)
+    with QIF_Handler() as QIF:
+        df = QIF.readQif(filename, parent.selectedAcc)
     colList = list(df.columns.values)
     sql = "Insert into Transactions ({}) values ({})"
     headers = ", ".join([i for i in colList])
