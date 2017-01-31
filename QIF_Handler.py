@@ -1,5 +1,6 @@
 import pandas as pd
 import datetime as dt
+from PySide.QtSql import *
 
 
 def parseQifLine(line):
@@ -17,7 +18,7 @@ def parseQifLine(line):
     return {code: value}
 
 
-def readQif(filename, account):
+def readQif(filename, parent):
     with open(filename) as f:
         transactions = f.read().split("\n^\n")
         df = pd.DataFrame()
@@ -26,7 +27,7 @@ def readQif(filename, account):
             for line in transaction.split("\n"):
                 transdict.update(parseQifLine(line))
             df = df.append(transdict, ignore_index=True)
-    df["account"] = account
+    df["account"] = parent.selectedAcc
     df["category"] = 1
     df.drop(("None"), axis=1, inplace=True)
     return df

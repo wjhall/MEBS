@@ -24,14 +24,13 @@ class MEBS(QMainWindow):
         if os.path.isfile(self.path + "\config.ini"):
             with open(self.path + "\config.ini") as f:
                 self.db = f.readline()
-        self.selectedAcc = '%'
+        self.selectedAcc = 0
         QMainWindow.__init__(self)
         if self.db == "":
             self.drawLoad()
         else:
             self.openDB()
             self.drawHome()
-            addBudgetMonth(self, "2016-12-01")
 
     def openDB(self):
         self.tempdb = QSqlDatabase.addDatabase("QSQLITE")
@@ -56,7 +55,7 @@ class MEBS(QMainWindow):
         self.show()
 
     def updateTransTable(self, account):
-        self.selectedAcc = account
+        self.selectedAcc = accountID(self, account)
         self.drawHome()
 
     def drawHome(self):
@@ -131,8 +130,8 @@ class MEBS(QMainWindow):
 
     def newAccount(self):
         account = QInputDialog.getText(self, "Add New Account", "Account Name")
-        self.selectedAcc = account[0]
-        addAccountSQL(self.selectedAcc, 'foo', self)
+        addAccountSQL(account[0], 'foo', self)
+        self.selectedAcc = accountID(self, account[0])
         self.drawHome()
 
     def setConfig(self):
@@ -142,7 +141,7 @@ class MEBS(QMainWindow):
     def importQIF(self):
         accountlist = [acc[0] for acc in getAccounts(self)]
         account = QInputDialog.getItem(self, "Select account to import to", "Account", accountlist)
-        self.selectedAcc = account[0]
+        self.selectedAcc = accountID(self, account[0])
         dialog = QFileDialog(self)
         filename = dialog.getOpenFileName(filter="*.qif")
         if filename[0] == "":
@@ -155,9 +154,10 @@ class MEBS(QMainWindow):
         model = QSqlRelationalTableModel()
         model.setTable("Transactions")
         model.setRelation(7, QSqlRelation("Envelopes", "ID", "subcategory"))
+        model.setRelation(2, QSqlRelation("Accounts", "ID", "Name"))
         model.setEditStrategy(QSqlTableModel.OnFieldChange)
-        if self.selectedAcc != "%":
-            model.setFilter("account='{}'".format(self.selectedAcc))
+        if self.selectedAcc != 0:
+            model.setFilter("account={}".format(self.selectedAcc))
         model.select()
         view = QTableView()
         view.setModel(model)
