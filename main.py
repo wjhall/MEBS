@@ -55,7 +55,10 @@ class MEBS(QMainWindow):
         self.show()
 
     def updateTransTable(self, account):
-        self.selectedAcc = accountID(self, account)
+        if account == 0:
+            self.selectedAcc = 0
+        else:
+            self.selectedAcc = accountID(self, account)
         self.drawHome()
 
     def drawHome(self):
@@ -117,12 +120,17 @@ class MEBS(QMainWindow):
     def AccountsListVBox(self):
         vbox = QVBoxLayout()
         for account in getAccounts(self):
-            button = (QPushButton(account[0]))
+            button = QPushButton(account[0])
             button.clicked.connect(partial(self.updateTransTable, account[0]))
-            label = (QLabel(str(account[1])))
+            label = QLabel(str(account[1]))
             vbox.addWidget(button)
             vbox.addWidget(label)
-        button = (QPushButton("Add New Account"))
+        button = QPushButton("All Accounts")
+        button.clicked.connect(partial(self.updateTransTable, 0))
+        label = QLabel(str(sum(account[1] for account in getAccounts(self))))
+        vbox.addWidget(button)
+        vbox.addWidget(label)
+        button = QPushButton("Add New Account")
         button.clicked.connect(self.newAccount)
         vbox.addWidget(button)
         vbox.setAlignment(Qt.AlignTop)
@@ -151,21 +159,22 @@ class MEBS(QMainWindow):
         self.drawHome()
 
     def getTransTable(self):
-        model = QSqlRelationalTableModel()
-        model.setTable("Transactions")
-        model.setRelation(7, QSqlRelation("Envelopes", "ID", "subcategory"))
-        model.setRelation(2, QSqlRelation("Accounts", "ID", "Name"))
-        model.setEditStrategy(QSqlTableModel.OnFieldChange)
+        self.Tmodel = QSqlRelationalTableModel()
+        self.Tmodel.setTable("Transactions")
+        self.Tmodel.setRelation(7, QSqlRelation("Envelopes", "ID", "subcategory"))
+        self.Tmodel.setRelation(2, QSqlRelation("Accounts", "ID", "Name"))
+        self.Tmodel.setEditStrategy(QSqlTableModel.OnRowChange)
         if self.selectedAcc != 0:
-            model.setFilter("account={}".format(self.selectedAcc))
-        model.select()
+            self.Tmodel.setFilter("account={}".format(self.selectedAcc))
+        self.Tmodel.select()
         view = QTableView()
-        view.setModel(model)
+        view.setModel(self.Tmodel)
         view.setItemDelegate(QSqlRelationalDelegate(view))
+        view.setColumnHidden(0, True)
         return view
 
     def getBudgetTable(self):
-        model = QSqlQueryModel()
+        self.Bmodel = QSqlQueryModel()
         sql = "Select Envelopes.category, Envelopes.subcategory, foo.Total\
             FROM Envelopes \
             LEFT OUTER JOIN ( \
@@ -177,14 +186,38 @@ class MEBS(QMainWindow):
             ON Envelopes.ID = foo.category \
             GROUP BY Envelopes.subcategory \
             ORDER BY Envelopes.category, Envelopes.subcategory"
-        model.setQuery(sql)
+        self.Bmodel.setQuery(sql)
         view = QTableView()
-        view.setModel(model)
+        view.setModel(self.Bmodel)
         return view
 
     def getTabBar(self):
         tabs = QTabWidget(self)
-        tabs.addTab(self.getTransTable(), "Transactions")
+
+        topLayout = QVBoxLayout()
+        topLayout.addWidget(self.getTransTable())
+
+        bottomLayout = QHBoxLayout()
+        button = QPushButton("Add Transaction")
+        button.clicked.connect(partial(self.Tmodel.insertRow, 1))
+        bottomLayout.addWidget(button)
+        button = QPushButton("Save Changes")
+
+        def saveChanges():
+            self.Tmodel.submitAll()
+            updateAccSQLBalance(self)
+            self.drawHome()
+        button.clicked.connect(saveChanges)
+        bottomLayout.addWidget(button)
+
+        mainLayout = QVBoxLayout()
+        mainLayout.addLayout(topLayout)
+        mainLayout.addLayout(bottomLayout)
+
+        transWidg = QWidget(self)
+        transWidg.setLayout(mainLayout)
+        tabs.addTab(transWidg, "Transactions")
+
         tabs.addTab(self.getBudgetTable(), "Budget")
         tabs.addTab(QLabel("foo"), "Reports")
         return tabs
