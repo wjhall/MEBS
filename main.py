@@ -1,6 +1,8 @@
 # todo:
-#   add budget view
-#   add budget items
+#   fix budget view by month
+#   capacity to edit budget items
+#   capacity to delete transactions
+#   capacity to highlight/filter transactions by category
 #   add reports
 
 
