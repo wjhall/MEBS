@@ -21,23 +21,14 @@ import os.path
 class MEBS(QMainWindow):
 
     def __init__(self):
+        QMainWindow.__init__(self)
         self.path = os.path.dirname(__file__)
-        self.db = ""
         if os.path.isfile(self.path + "\config.ini"):
             with open(self.path + "\config.ini") as f:
-                self.db = f.readline()
-        self.selectedAcc = 0
-        QMainWindow.__init__(self)
-        if self.db == "":
-            self.drawLoad()
+                self.SQL = SQL_Handler(f.readline())
+                self.drawHome()
         else:
-            self.openDB()
-            self.drawHome()
-
-    def openDB(self):
-        self.tempdb = QSqlDatabase.addDatabase("QSQLITE")
-        self.tempdb.setDatabaseName(self.db)
-        self.tempdb.open()
+            self.drawLoad()
 
     def drawLoad(self):
         self.setupMenuBar()
@@ -47,7 +38,7 @@ class MEBS(QMainWindow):
 
         self.layout = QHBoxLayout()
         button = (QPushButton("New"))
-        button.clicked.connect(self.newDB)
+        button.clicked.connect(partial(self.loadDB, True))
         self.layout.addWidget(button)
         button = (QPushButton("Load"))
         button.clicked.connect(self.loadDB)
@@ -57,10 +48,7 @@ class MEBS(QMainWindow):
         self.show()
 
     def updateTransTable(self, account):
-        if account == 0:
-            self.selectedAcc = 0
-        else:
-            self.selectedAcc = accountID(self, account)
+        self.SQL.setSelectedAcc(account)
         self.drawHome()
 
     def drawHome(self):
@@ -80,33 +68,25 @@ class MEBS(QMainWindow):
         self.setCentralWidget(self.main)
         self.show()
 
-    def loadDB(self):
+    def loadDB(self, new=False):
         dialog = QFileDialog(self)
         dialog.setFileMode(QFileDialog.AnyFile)
-        filename = dialog.getOpenFileName(filter="*.db")
+        if new:
+            filename = dialog.getSaveFileName(filter="*.db")
+        else:
+            filename = dialog.getOpenFileName(filter="*.db")
         if filename[0] == "":
             return
-        self.db = filename[0]
-        self.openDB()
-        self.setConfig()
-        self.drawHome()
-
-    def newDB(self):
-        dialog = QFileDialog(self)
-        dialog.setFileMode(QFileDialog.AnyFile)
-        filename = dialog.getSaveFileName(filter="*.db")
-        if filename[0] == "":
-            return
-        self.db = filename[0]
-        self.openDB()
-        initNewDB(self)
+        self.SQL = SQL_Handler(filename[0])
+        if new:
+            self.SQL.initNewDB()
         self.setConfig()
         self.drawHome()
 
     def setupMenuBar(self):
         menu = QMenuBar()
         newmenu = QAction('New', self)
-        newmenu.triggered.connect(self.newDB)
+        newmenu.triggered.connect(partial(self.loadDB, True))
         menu.addAction(newmenu)
         loadmenu = QAction('Load', self)
         loadmenu.triggered.connect(self.loadDB)
@@ -121,7 +101,7 @@ class MEBS(QMainWindow):
 
     def AccountsListVBox(self):
         vbox = QVBoxLayout()
-        for account in getAccounts(self):
+        for account in self.SQL.getAccounts():
             button = QPushButton(account[0])
             button.clicked.connect(partial(self.updateTransTable, account[0]))
             label = QLabel(str(account[1]))
@@ -129,7 +109,7 @@ class MEBS(QMainWindow):
             vbox.addWidget(label)
         button = QPushButton("All Accounts")
         button.clicked.connect(partial(self.updateTransTable, 0))
-        label = QLabel(str(sum(account[1] for account in getAccounts(self))))
+        label = QLabel(str(sum(account[1] for account in self.SQL.getAccounts())))
         vbox.addWidget(button)
         vbox.addWidget(label)
         button = QPushButton("Add New Account")
@@ -139,14 +119,13 @@ class MEBS(QMainWindow):
         return vbox
 
     def newAccount(self):
-        account = QInputDialog.getText(self, "Add New Account", "Account Name")
-        addAccountSQL(account[0], 'foo', self)
-        self.selectedAcc = accountID(self, account[0])
+        name = QInputDialog.getText(self, "Add New Account", "Account Name")
+        self.SQL.addAccount(name[0])
         self.drawHome()
 
     def setConfig(self):
         with open(self.path + "\config.ini", 'w+') as f:
-            f.write(self.db)
+            f.write(self.SQL.dbpath)
 
     def importQIF(self):
         accountlist = [acc[0] for acc in getAccounts(self)]
@@ -197,11 +176,11 @@ class MEBS(QMainWindow):
         tabs = QTabWidget(self)
 
         topLayout = QVBoxLayout()
-        topLayout.addWidget(self.getTransTable())
+        # topLayout.addWidget(self.getTransTable())
 
         bottomLayout = QHBoxLayout()
         button = QPushButton("Add Transaction")
-        button.clicked.connect(partial(self.Tmodel.insertRow, 1))
+        # button.clicked.connect(partial(self.Tmodel.insertRow, 1))
         bottomLayout.addWidget(button)
         button = QPushButton("Save Changes")
 
