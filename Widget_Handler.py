@@ -41,3 +41,46 @@ class Widget_Handler():
         vbox.addWidget(button)
         vbox.setAlignment(Qt.AlignTop)
         return vbox
+
+    def getTabBar(self):
+        tabs = QTabWidget(self.parent)
+
+        topLayout = QVBoxLayout()
+        self.parent.SQL.getTransTable()
+        topLayout.addWidget(self.parent.Tview)
+
+        bottomLayout = QHBoxLayout()
+        button = QPushButton("Add Transaction")
+        button.clicked.connect(partial(self.parent.Tmodel.insertRow, 1))
+        bottomLayout.addWidget(button)
+
+        button = QPushButton("Save Changes")
+        def saveChanges():
+            self.parent.Tmodel.submitAll()
+            self.parent.SQL.updateAccSQLBalance()
+            self.parent.drawHome()
+        button.clicked.connect(saveChanges)
+        bottomLayout.addWidget(button)
+
+        button = QPushButton("Delete Row")
+        def delRow():
+            rows = sorted(set(index.row() for index in
+                self.parent.Tview.selectedIndexes()))
+            for row in rows:
+                self.parent.Tmodel.removeRow(row)
+            self.parent.SQL.updateAccSQLBalance()
+            self.parent.drawHome()
+        button.clicked.connect(delRow)
+        bottomLayout.addWidget(button)
+
+        mainLayout = QVBoxLayout()
+        mainLayout.addLayout(topLayout)
+        mainLayout.addLayout(bottomLayout)
+
+        transWidg = QWidget(self.parent)
+        transWidg.setLayout(mainLayout)
+        tabs.addTab(transWidg, "Transactions")
+
+        tabs.addTab(self.parent.getBudgetTable(), "Budget")
+        tabs.addTab(QLabel("foo"), "Reports")
+        return tabs

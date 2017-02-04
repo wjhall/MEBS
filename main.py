@@ -64,7 +64,7 @@ class MEBS(QMainWindow):
 
         self.layout = QHBoxLayout()
         self.layout.addWidget(self.AccBox)
-        self.layout.addWidget(self.getTabBar())
+        self.layout.addWidget(self.WH.getTabBar())
         self.main.setLayout(self.layout)
 
         self.setCentralWidget(self.main)
@@ -122,38 +122,6 @@ class MEBS(QMainWindow):
         view = QTableView()
         view.setModel(self.Bmodel)
         return view
-
-    def getTabBar(self):
-        tabs = QTabWidget(self)
-
-        topLayout = QVBoxLayout()
-        topLayout.addWidget(self.SQL.getTransTable())
-
-        bottomLayout = QHBoxLayout()
-        button = QPushButton("Add Transaction")
-        # button.clicked.connect(partial(self.Tmodel.insertRow, 1))
-        bottomLayout.addWidget(button)
-        button = QPushButton("Save Changes")
-
-        def saveChanges():
-            self.Tmodel.submitAll()
-            updateAccSQLBalance(self)
-            self.drawHome()
-        button.clicked.connect(saveChanges)
-        bottomLayout.addWidget(button)
-
-        mainLayout = QVBoxLayout()
-        mainLayout.addLayout(topLayout)
-        mainLayout.addLayout(bottomLayout)
-
-        transWidg = QWidget(self)
-        transWidg.setLayout(mainLayout)
-        tabs.addTab(transWidg, "Transactions")
-
-        tabs.addTab(self.getBudgetTable(), "Budget")
-        tabs.addTab(QLabel("foo"), "Reports")
-        return tabs
-
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)

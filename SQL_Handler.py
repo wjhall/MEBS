@@ -146,8 +146,7 @@ class SQL_Handler():
         if self.selectedAcc != 0:
             self.parent.Tmodel.setFilter("account={}".format(self.selectedAcc))
         self.parent.Tmodel.select()
-        view = QTableView()
-        view.setModel(self.parent.Tmodel)
-        view.setItemDelegate(QSqlRelationalDelegate(view))
-        view.setColumnHidden(0, True)
-        return view
+        self.parent.Tview = QTableView()
+        self.parent.Tview.setModel(self.parent.Tmodel)
+        self.parent.Tview.setItemDelegate(QSqlRelationalDelegate(self.parent.Tview))
+        self.parent.Tview.setColumnHidden(0, True)
