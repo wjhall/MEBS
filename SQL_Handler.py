@@ -6,7 +6,8 @@ from PySide.QtSql import *
 
 
 class SQL_Handler():
-    def __init__(self, dbpath):
+    def __init__(self, dbpath, parent):
+        self.parent = parent
         self.dbpath = dbpath
         self.selectedAcc = 0
         self.db = QSqlDatabase.addDatabase("QSQLITE")
@@ -27,21 +28,22 @@ class SQL_Handler():
         query = QSqlQuery(sql, self.db)
         self.setSelectedAcc(name)
 
-    def insertTransSQL(filename, parent):
+    def insertTransSQL(self, filename):
         with QIF_Handler() as QIF:
-            df = QIF.readQif(filename, parent.selectedAcc)
+            df = QIF.readQif(filename, self.selectedAcc)
         colList = list(df.columns.values)
         sql = "Insert into Transactions ({}) values ({})"
         headers = ", ".join([i for i in colList])
         blanks = ", ".join(["?" for i in colList])
         sql = sql.format(headers, blanks)
-        parent.tempdb.transaction()
-        query = QSqlQuery(parent.tempdb)
+        self.db.transaction()
+        query = QSqlQuery(self.db)
         query.prepare(sql)
         for cols in colList:
             query.addBindValue(df[cols].tolist())
         query.execBatch()
-        parent.tempdb.commit()
+        self.db.commit()
+        self.updateAccSQLBalance()
 
     def initNewDB(self):
         sql = '''Create Table if not exists Envelopes (\
@@ -85,16 +87,16 @@ class SQL_Handler():
             actual real)'''
         query = QSqlQuery(sql, self.db)
 
-    def updateAccSQLBalance(parent):
+    def updateAccSQLBalance(self):
         sql = "Select ID from Accounts"
-        query = QSqlQuery(sql, parent.tempdb)
+        query = QSqlQuery(sql, self.db)
         accounts = []
         while query.next():
             accounts.append(query.value(0))
         balances = []
         for account in accounts:
             sql = "Select Sum(amount) from Transactions where account={}".format(account)
-            query = QSqlQuery(sql, parent.tempdb)
+            query = QSqlQuery(sql, self.db)
             query.next()
             if query.value(0) != "":
                 balance = round(query.value(0), 2)
@@ -103,7 +105,7 @@ class SQL_Handler():
             ID = account[0]
             balance = account[1]
             sql = "Update Accounts set Balance = {} where ID = {}".format(balance, ID)
-            query = QSqlQuery(sql, parent.tempdb)
+            query = QSqlQuery(sql, self.db)
 
     def addEnvelope(self, category, subcategory):
         sql = "Insert into Envelopes \
@@ -134,3 +136,18 @@ class SQL_Handler():
         while query.next():
             accounts.append([query.value(0), query.value(1)])
         return accounts
+
+    def getTransTable(self):
+        self.parent.Tmodel = QSqlRelationalTableModel()
+        self.parent.Tmodel.setTable("Transactions")
+        self.parent.Tmodel.setRelation(7, QSqlRelation("Envelopes", "ID", "subcategory"))
+        self.parent.Tmodel.setRelation(2, QSqlRelation("Accounts", "ID", "Name"))
+        self.parent.Tmodel.setEditStrategy(QSqlTableModel.OnRowChange)
+        if self.selectedAcc != 0:
+            self.parent.Tmodel.setFilter("account={}".format(self.selectedAcc))
+        self.parent.Tmodel.select()
+        view = QTableView()
+        view.setModel(self.parent.Tmodel)
+        view.setItemDelegate(QSqlRelationalDelegate(view))
+        view.setColumnHidden(0, True)
+        return view

@@ -14,6 +14,7 @@ from PySide.QtGui import *
 from PySide.QtSql import *
 from QIF_Handler import *
 from SQL_Handler import *
+from Widget_Handler import *
 from functools import partial
 import os.path
 
@@ -23,15 +24,16 @@ class MEBS(QMainWindow):
     def __init__(self):
         QMainWindow.__init__(self)
         self.path = os.path.dirname(__file__)
+        self.WH = Widget_Handler(self)
         if os.path.isfile(self.path + "\config.ini"):
             with open(self.path + "\config.ini") as f:
-                self.SQL = SQL_Handler(f.readline())
+                self.SQL = SQL_Handler(f.readline(), self)
                 self.drawHome()
         else:
             self.drawLoad()
 
     def drawLoad(self):
-        self.setupMenuBar()
+        self.WH.setupMenuBar()
 
         self.main = QWidget(self)
         self.main.setMinimumSize(800, 600)
@@ -52,13 +54,13 @@ class MEBS(QMainWindow):
         self.drawHome()
 
     def drawHome(self):
-        self.setupMenuBar()
+        self.WH.setupMenuBar()
 
         self.main = QWidget(self)
         self.main.setMinimumSize(800, 600)
 
         self.AccBox = QGroupBox("Accounts", self.main)
-        self.AccBox.setLayout(self.AccountsListVBox())
+        self.AccBox.setLayout(self.WH.AccountsListVBox())
 
         self.layout = QHBoxLayout()
         self.layout.addWidget(self.AccBox)
@@ -77,46 +79,11 @@ class MEBS(QMainWindow):
             filename = dialog.getOpenFileName(filter="*.db")
         if filename[0] == "":
             return
-        self.SQL = SQL_Handler(filename[0])
+        self.SQL = SQL_Handler(filename[0], self)
         if new:
             self.SQL.initNewDB()
         self.setConfig()
         self.drawHome()
-
-    def setupMenuBar(self):
-        menu = QMenuBar()
-        newmenu = QAction('New', self)
-        newmenu.triggered.connect(partial(self.loadDB, True))
-        menu.addAction(newmenu)
-        loadmenu = QAction('Load', self)
-        loadmenu.triggered.connect(self.loadDB)
-        menu.addAction(loadmenu)
-        QIFImport = QAction('Import QIF', self)
-        QIFImport.triggered.connect(self.importQIF)
-        menu.addAction(QIFImport)
-        quitmenu = QAction('Quit', self)
-        quitmenu.triggered.connect(QApplication.quit)
-        menu.addAction(quitmenu)
-        self.setMenuBar(menu)
-
-    def AccountsListVBox(self):
-        vbox = QVBoxLayout()
-        for account in self.SQL.getAccounts():
-            button = QPushButton(account[0])
-            button.clicked.connect(partial(self.updateTransTable, account[0]))
-            label = QLabel(str(account[1]))
-            vbox.addWidget(button)
-            vbox.addWidget(label)
-        button = QPushButton("All Accounts")
-        button.clicked.connect(partial(self.updateTransTable, 0))
-        label = QLabel(str(sum(account[1] for account in self.SQL.getAccounts())))
-        vbox.addWidget(button)
-        vbox.addWidget(label)
-        button = QPushButton("Add New Account")
-        button.clicked.connect(self.newAccount)
-        vbox.addWidget(button)
-        vbox.setAlignment(Qt.AlignTop)
-        return vbox
 
     def newAccount(self):
         name = QInputDialog.getText(self, "Add New Account", "Account Name")
@@ -128,31 +95,15 @@ class MEBS(QMainWindow):
             f.write(self.SQL.dbpath)
 
     def importQIF(self):
-        accountlist = [acc[0] for acc in getAccounts(self)]
+        accountlist = [acc[0] for acc in self.SQL.getAccounts()]
         account = QInputDialog.getItem(self, "Select account to import to", "Account", accountlist)
-        self.selectedAcc = accountID(self, account[0])
+        self.SQL.setSelectedAcc(account[0])
         dialog = QFileDialog(self)
         filename = dialog.getOpenFileName(filter="*.qif")
         if filename[0] == "":
             return
-        insertTransSQL(filename[0], self)
-        updateAccSQLBalance(self)
+        self.SQL.insertTransSQL(filename[0])
         self.drawHome()
-
-    def getTransTable(self):
-        self.Tmodel = QSqlRelationalTableModel()
-        self.Tmodel.setTable("Transactions")
-        self.Tmodel.setRelation(7, QSqlRelation("Envelopes", "ID", "subcategory"))
-        self.Tmodel.setRelation(2, QSqlRelation("Accounts", "ID", "Name"))
-        self.Tmodel.setEditStrategy(QSqlTableModel.OnRowChange)
-        if self.selectedAcc != 0:
-            self.Tmodel.setFilter("account={}".format(self.selectedAcc))
-        self.Tmodel.select()
-        view = QTableView()
-        view.setModel(self.Tmodel)
-        view.setItemDelegate(QSqlRelationalDelegate(view))
-        view.setColumnHidden(0, True)
-        return view
 
     def getBudgetTable(self):
         self.Bmodel = QSqlQueryModel()
@@ -176,7 +127,7 @@ class MEBS(QMainWindow):
         tabs = QTabWidget(self)
 
         topLayout = QVBoxLayout()
-        # topLayout.addWidget(self.getTransTable())
+        topLayout.addWidget(self.SQL.getTransTable())
 
         bottomLayout = QHBoxLayout()
         button = QPushButton("Add Transaction")
