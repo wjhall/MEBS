@@ -129,9 +129,15 @@ class SQL_Handler():
             query = QSqlQuery(sql, parent.tempdb)
 
     def updateBudgetValues(date, subcategory, budgeted):
-        sql = '''Insert into Budget (`Month`,subcategory,actual)
+        sql = '''Insert OR IGNORE into Budget2 (Mo,cat,actual)
 Select strftime('%Y-%m', TransDate) AS Mo, category as cat, sum(amount) as tot from Transactions
-group by strftime('%Y-%m', TransDate), category'''
+group by strftime('%Y-%m', TransDate), category;
+
+REPLACE into Budget2 (Mo,cat, budgeted, actual)
+	Select a.Mo, a.cat, b.budgeted, a.tot from
+	(Select strftime('%Y-%m', TransDate) as Mo, category as cat, sum(amount) as tot FROM Transactions
+	group by strftime('%Y-%m', TransDate), category) as a
+	INNER JOIN Budget2 as b ON a.Mo=b.Mo AND a.cat=b.cat;'''
         pass
 
     def getAccounts(self):
