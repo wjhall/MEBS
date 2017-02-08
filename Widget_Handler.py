@@ -55,6 +55,7 @@ class Widget_Handler():
         bottomLayout.addWidget(button)
 
         button = QPushButton("Save Changes")
+
         def saveChanges():
             self.parent.Tmodel.submitAll()
             self.parent.SQL.updateAccSQLBalance()
@@ -63,9 +64,10 @@ class Widget_Handler():
         bottomLayout.addWidget(button)
 
         button = QPushButton("Delete Row")
+
         def delRow():
             rows = sorted(set(index.row() for index in
-                self.parent.Tview.selectedIndexes()))
+                              self.parent.Tview.selectedIndexes()))
             for row in rows:
                 self.parent.Tmodel.removeRow(row)
             self.parent.SQL.updateAccSQLBalance()
@@ -81,6 +83,7 @@ class Widget_Handler():
         transWidg.setLayout(mainLayout)
         tabs.addTab(transWidg, "Transactions")
 
-        tabs.addTab(self.parent.getBudgetTable(), "Budget")
+        self.parent.SQL.getBudgetTable()
+        tabs.addTab(self.parent.Bview, "Budget")
         tabs.addTab(QLabel("foo"), "Reports")
         return tabs

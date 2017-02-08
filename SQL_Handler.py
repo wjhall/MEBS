@@ -3,6 +3,7 @@ from PySide.QtCore import *
 from PySide.QtGui import *
 from QIF_Handler import *
 from PySide.QtSql import *
+import datetime
 
 
 class SQL_Handler():
@@ -10,6 +11,7 @@ class SQL_Handler():
         self.parent = parent
         self.dbpath = dbpath
         self.selectedAcc = 0
+        self.selectedMonth = datetime.date(2017, 01, 01)
         self.db = QSqlDatabase.addDatabase("QSQLITE")
         self.db.setDatabaseName(self.dbpath)
         self.db.open()
@@ -127,6 +129,9 @@ class SQL_Handler():
             query = QSqlQuery(sql, parent.tempdb)
 
     def updateBudgetValues(date, subcategory, budgeted):
+        sql = '''Insert into Budget (`Month`,subcategory,actual)
+Select strftime('%Y-%m', TransDate) AS Mo, category as cat, sum(amount) as tot from Transactions
+group by strftime('%Y-%m', TransDate), category'''
         pass
 
     def getAccounts(self):
@@ -150,3 +155,13 @@ class SQL_Handler():
         self.parent.Tview.setModel(self.parent.Tmodel)
         self.parent.Tview.setItemDelegate(QSqlRelationalDelegate(self.parent.Tview))
         self.parent.Tview.setColumnHidden(0, True)
+
+    def getBudgetTable(self):
+        self.parent.Bmodel = QSqlRelationalTableModel()
+        self.parent.Bmodel.setTable("Budget")
+        self.parent.Bmodel.setEditStrategy(QSqlTableModel.OnRowChange)
+        self.parent.Bmodel.select()
+        self.parent.Bview = QTableView()
+        self.parent.Bview.setModel(self.parent.Bmodel)
+        self.parent.Bview.setItemDelegate(QSqlRelationalDelegate(self.parent.Bview))
+        self.parent.Bview.setColumnHidden(0, True)

@@ -23,6 +23,9 @@ class MEBS(QMainWindow):
 
     def __init__(self):
         QMainWindow.__init__(self)
+        with open('C:\Users\whall\Documents\dev\MEBS\MEBS\MEBS\Style.css', 'r') as file:
+            style_sheet = file.read()
+            self.setStyleSheet(style_sheet)
         self.path = os.path.dirname(__file__)
         self.WH = Widget_Handler(self)
         if os.path.isfile(self.path + "\config.ini"):
@@ -87,6 +90,9 @@ class MEBS(QMainWindow):
 
     def newAccount(self):
         name = QInputDialog.getText(self, "Add New Account", "Account Name")
+        if name[0] == "":
+            self.drawHome()
+            return
         self.SQL.addAccount(name[0])
         self.drawHome()
 
@@ -104,24 +110,6 @@ class MEBS(QMainWindow):
             return
         self.SQL.insertTransSQL(filename[0])
         self.drawHome()
-
-    def getBudgetTable(self):
-        self.Bmodel = QSqlQueryModel()
-        sql = "Select Envelopes.category, Envelopes.subcategory, foo.Total\
-            FROM Envelopes \
-            LEFT OUTER JOIN ( \
-                SELECT category, sum(amount) as Total \
-                FROM Transactions \
-                WHERE TransDate > '2016-12-31' \
-                GROUP BY category\
-            ) as foo \
-            ON Envelopes.ID = foo.category \
-            GROUP BY Envelopes.subcategory \
-            ORDER BY Envelopes.category, Envelopes.subcategory"
-        self.Bmodel.setQuery(sql)
-        view = QTableView()
-        view.setModel(self.Bmodel)
-        return view
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
