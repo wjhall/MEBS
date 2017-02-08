@@ -80,7 +80,7 @@ class SQL_Handler():
             Name text UNIQUE, \
             Balance real, \
             type text)'''
-        query = QSqlQuery(sql, self.db)
+        query = QSqlQuery(sql, self.db)######budeget needs unique col pair
         sql = '''Create Table if not exists Budget (\
             ID integer PRIMARY KEY, \
             Month Date, \
