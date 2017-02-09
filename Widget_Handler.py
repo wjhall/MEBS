@@ -2,6 +2,7 @@ from PySide.QtCore import *
 from PySide.QtGui import *
 from functools import partial
 
+
 class Widget_Handler():
 
     def __init__(self, parent):
@@ -59,6 +60,7 @@ class Widget_Handler():
         def saveChanges():
             self.parent.Tmodel.submitAll()
             self.parent.SQL.updateAccSQLBalance()
+            self.parent.SQL.updateBudgetValues()
             self.parent.drawHome()
         button.clicked.connect(saveChanges)
         bottomLayout.addWidget(button)

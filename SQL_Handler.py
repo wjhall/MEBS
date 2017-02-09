@@ -3,6 +3,7 @@ from PySide.QtCore import *
 from PySide.QtGui import *
 from QIF_Handler import *
 from PySide.QtSql import *
+import SQLQueries as stmt
 import datetime
 
 
@@ -46,13 +47,10 @@ class SQL_Handler():
         query.execBatch()
         self.db.commit()
         self.updateAccSQLBalance()
+        self.updateBudgetValues()
 
     def initNewDB(self):
-        sql = '''Create Table if not exists Envelopes (\
-            ID integer PRIMARY KEY, \
-            category text, \
-            subcategory text)'''
-        query = QSqlQuery(sql, self.db)
+        query = [QSqlQuery(i, self.db) for i in stmt.initList]
         initevelopes = [
             ["None", "None"],
             ["Expenses", "Housing"],
@@ -64,30 +62,6 @@ class SQL_Handler():
         ]
         for envs in initevelopes:
             self.addEnvelope(envs[0], envs[1])
-        sql = '''Create Table if not exists Transactions (\
-            ID integer PRIMARY KEY, \
-            TransDate DATE, \
-            account integer, \
-            payee text, \
-            memo text, \
-            cStatus integer, \
-            amount real, \
-            category integer DEFAULT 1, \
-            flags text)'''
-        query = QSqlQuery(sql, self.db)
-        sql = '''Create Table if not exists Accounts (\
-            ID integer PRIMARY KEY, \
-            Name text UNIQUE, \
-            Balance real, \
-            type text)'''
-        query = QSqlQuery(sql, self.db)######budeget needs unique col pair
-        sql = '''Create Table if not exists Budget (\
-            ID integer PRIMARY KEY, \
-            Month Date, \
-            subcategory integer, \
-            budgeted real, \
-            actual real)'''
-        query = QSqlQuery(sql, self.db)
 
     def updateAccSQLBalance(self):
         sql = "Select ID from Accounts"
@@ -128,17 +102,8 @@ class SQL_Handler():
             VALUES ({},{},0,0)".format(month, envs)
             query = QSqlQuery(sql, parent.tempdb)
 
-    def updateBudgetValues(date, subcategory, budgeted):
-        sql = '''Insert OR IGNORE into Budget2 (Mo,cat,actual)
-Select strftime('%Y-%m', TransDate) AS Mo, category as cat, sum(amount) as tot from Transactions
-group by strftime('%Y-%m', TransDate), category;
-
-REPLACE into Budget2 (Mo,cat, budgeted, actual)
-	Select a.Mo, a.cat, b.budgeted, a.tot from
-	(Select strftime('%Y-%m', TransDate) as Mo, category as cat, sum(amount) as tot FROM Transactions
-	group by strftime('%Y-%m', TransDate), category) as a
-	INNER JOIN Budget2 as b ON a.Mo=b.Mo AND a.cat=b.cat;'''
-        pass
+    def updateBudgetValues(self):
+        query = [QSqlQuery(i, self.db) for i in stmt.updateBudgetValues]
 
     def getAccounts(self):
         accounts = []
