@@ -1,7 +1,8 @@
 from PySide.QtCore import *
 from PySide.QtGui import *
 from functools import partial
-
+import datetime
+from dateutil.relativedelta import relativedelta
 
 class Widget_Handler():
 
@@ -92,5 +93,30 @@ class Widget_Handler():
         return transWidg
 
     def BudgetTab(self):
+        def ChangeMonth(n):
+            current = self.parent.SQL.selectedMonth
+            current = datetime.datetime.strptime(current, "%Y-%m")
+            current += relativedelta(months=n)
+            self.parent.SQL.selectedMonth = current.strftime("%Y-%m")
+            self.parent.drawHome()
+
+        topLayout = QVBoxLayout()
         self.parent.SQL.getBudgetTable()
-        return self.parent.Bview
+        topLayout.addWidget(self.parent.Bview)
+
+        bottomLayout = QHBoxLayout()
+
+        button = QPushButton("Previous Month")
+        button.clicked.connect(partial(ChangeMonth, -1))
+        bottomLayout.addWidget(button)
+        button = QPushButton("Next Month")
+        button.clicked.connect(partial(ChangeMonth, +1))
+        bottomLayout.addWidget(button)
+
+        mainLayout = QVBoxLayout()
+        mainLayout.addLayout(topLayout)
+        mainLayout.addLayout(bottomLayout)
+
+        BudWidg = QWidget(self.parent)
+        BudWidg.setLayout(mainLayout)
+        return BudWidg
