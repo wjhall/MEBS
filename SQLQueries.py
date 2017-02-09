@@ -1,38 +1,57 @@
-initTransactions = '''Create Table if not exists Transactions (\
-    ID integer PRIMARY KEY, \
-    TransDate DATE, \
-    account integer, \
-    payee text, \
-    memo text, \
-    cStatus integer, \
-    amount real, \
-    category integer DEFAULT 1, \
-    flags text \
+initTransactions = '''Create Table if not exists Transactions (
+    ID integer PRIMARY KEY,
+    TransDate DATE,
+    account integer,
+    payee text,
+    memo text,
+    cStatus integer,
+    amount real,
+    category integer DEFAULT 1,
+    flags text
     )'''
 
-initAccounts = '''Create Table if not exists Accounts (\
-    ID integer PRIMARY KEY, \
-    Name text UNIQUE, \
-    Balance real, \
-    type text \
+initAccounts = '''Create Table if not exists Accounts (
+    ID integer PRIMARY KEY,
+    Name text UNIQUE,
+    Balance real,
+    type text
     )'''
 
-initBudget = '''Create Table if not exists Budget (\
-    ID integer PRIMARY KEY, \
-    theMonth Date, \
-    subCategory integer, \
-    budgeted real, \
-    actual real,
-    UNIQUE(theMonth, subCategory) \
+initBudget = '''Create Table if not exists Budget (
+    ID integer PRIMARY KEY,
+    theMonth Date,
+    subCategory integer,
+    budgeted real default 0,
+    actual real default 0,
+    balance real default 0,
+    UNIQUE(theMonth, subCategory)
     )'''
 
-initEnvelopes = '''Create Table if not exists Envelopes (\
-    ID integer PRIMARY KEY, \
-    category text, \
-    subcategory text \
+initEnvelopes = '''Create Table if not exists Envelopes (
+    ID integer PRIMARY KEY,
+    category text,
+    subcategory text
     )'''
 
-initList = [initTransactions, initAccounts, initBudget, initEnvelopes]
+initBudTrigIns = '''Create Trigger budget_balance_ins
+    after Insert
+    ON Budget
+    BEGIN
+        Update budget set balance = budgeted+actual;
+    END;
+    '''
+
+initBudTrigUpd = '''Create Trigger budget_balance_upd
+    after Update
+    ON Budget
+    BEGIN
+        Update budget set balance = budgeted+actual;
+    END;
+    '''
+
+initList = [initTransactions, initAccounts,
+            initBudget, initEnvelopes,
+            initBudTrigIns, initBudTrigUpd]
 
 updateBudgetValues = ['''Insert OR IGNORE into Budget
     (theMonth, subCategory,actual)

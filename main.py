@@ -1,10 +1,3 @@
-# todo:
-#   fix budget view by month
-#   capacity to edit budget items
-#   capacity to highlight/filter transactions by category
-#   add reports
-
-
 import sqlite3
 import pandas as pd
 import sys
