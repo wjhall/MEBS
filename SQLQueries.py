@@ -49,9 +49,19 @@ initBudTrigUpd = '''Create Trigger budget_balance_upd
     END;
     '''
 
+initDelCatTrig = '''Create Trigger delete_category
+    after delete
+    on Envelopes
+    BEGIN
+        update Transactions set category = 1 where category = OLD.ID;
+        delete from Budget where subCategory = OLD.ID;
+    END;
+    '''
+
 initList = [initTransactions, initAccounts,
             initBudget, initEnvelopes,
-            initBudTrigIns, initBudTrigUpd]
+            initBudTrigIns, initBudTrigUpd,
+            initDelCatTrig]
 
 updateBudgetValues = ['''Insert OR IGNORE into Budget
     (theMonth, subCategory,actual)
@@ -62,8 +72,8 @@ updateBudgetValues = ['''Insert OR IGNORE into Budget
     group by strftime('%Y-%m', TransDate), category;''',
 
     '''REPLACE into Budget
-    (theMonth,subCategory, budgeted, actual)
-        (Select a.theMonth, a.cat, b.budgeted, a.tot
+    (theMonth, subCategory, budgeted, actual)
+        Select a.theMonth, a.cat, b.budgeted, a.tot
         from
             (Select
                 strftime('%Y-%m', TransDate) as theMonth,
@@ -71,8 +81,8 @@ updateBudgetValues = ['''Insert OR IGNORE into Budget
                 sum(amount) as tot
             FROM Transactions
             group by strftime('%Y-%m', TransDate), category)
-            as a)
+            as a
         INNER JOIN Budget
         as b
-        ON a.theMonth=b.theMonth AND a.cat=b.subCategory;)
-    )''']
+        ON a.theMonth=b.theMonth AND a.cat=b.subCategory;
+    ''']

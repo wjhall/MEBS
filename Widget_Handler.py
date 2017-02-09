@@ -4,6 +4,7 @@ from functools import partial
 import datetime
 from dateutil.relativedelta import relativedelta
 
+
 class Widget_Handler():
 
     def __init__(self, parent):
@@ -49,7 +50,8 @@ class Widget_Handler():
 
         tabs.addTab(self.TransTab(), "Transactions")
         tabs.addTab(self.BudgetTab(), "Budget")
-        tabs.addTab(QLabel("foo"), "Reports")
+        tabs.addTab(self.EnvTab(), "Envelopes")
+        tabs.addTab(self.RepTab(), "Reports")
         return tabs
 
     def TransTab(self):
@@ -120,3 +122,43 @@ class Widget_Handler():
         BudWidg = QWidget(self.parent)
         BudWidg.setLayout(mainLayout)
         return BudWidg
+
+    def EnvTab(self):
+        topLayout = QVBoxLayout()
+        self.parent.SQL.getEnvTable()
+        topLayout.addWidget(self.parent.Eview)
+
+        bottomLayout = QHBoxLayout()
+        button = QPushButton("Add Category")
+        button.clicked.connect(partial(self.parent.Emodel.insertRow, 1))
+        bottomLayout.addWidget(button)
+
+        button = QPushButton("Save Changes")
+
+        def saveChanges():
+            self.parent.Emodel.submitAll()
+            self.parent.drawHome()
+        button.clicked.connect(saveChanges)
+        bottomLayout.addWidget(button)
+
+        button = QPushButton("Delete Category")
+
+        def delRow():
+            rows = sorted(set(index.row() for index in
+                              self.parent.Eview.selectedIndexes()))
+            for row in rows:
+                self.parent.Emodel.removeRow(row)
+            self.parent.SQL.updateBudgetValues()
+            self.parent.drawHome()
+        button.clicked.connect(delRow)
+        bottomLayout.addWidget(button)
+
+        mainLayout = QVBoxLayout()
+        mainLayout.addLayout(topLayout)
+        mainLayout.addLayout(bottomLayout)
+        EnvWidg = QWidget(self.parent)
+        EnvWidg.setLayout(mainLayout)
+        return EnvWidg
+
+    def RepTab(self):
+        return QLabel("foo")
