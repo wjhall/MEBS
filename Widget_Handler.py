@@ -4,6 +4,7 @@ from functools import partial
 import datetime
 from dateutil.relativedelta import relativedelta
 
+
 class Widget_Handler():
 
     def __init__(self, parent):
@@ -49,7 +50,8 @@ class Widget_Handler():
 
         tabs.addTab(self.TransTab(), "Transactions")
         tabs.addTab(self.BudgetTab(), "Budget")
-        tabs.addTab(QLabel("foo"), "Reports")
+        tabs.addTab(self.EnvTab(), "Envelopes")
+        tabs.addTab(self.RepTab(), "Reports")
         return tabs
 
     def TransTab(self):
@@ -120,3 +122,16 @@ class Widget_Handler():
         BudWidg = QWidget(self.parent)
         BudWidg.setLayout(mainLayout)
         return BudWidg
+
+    def EnvTab(self):
+        topLayout = QVBoxLayout()
+        self.parent.SQL.getEnvTable()
+        topLayout.addWidget(self.parent.Eview)
+        mainLayout = QVBoxLayout()
+        mainLayout.addLayout(topLayout)
+        EnvWidg = QWidget(self.parent)
+        EnvWidg.setLayout(mainLayout)
+        return EnvWidg
+
+    def RepTab(self):
+        return QLabel("foo")

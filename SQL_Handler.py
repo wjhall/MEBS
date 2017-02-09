@@ -138,3 +138,13 @@ class SQL_Handler():
         self.parent.Bview.setModel(self.parent.Bmodel)
         self.parent.Bview.setItemDelegate(QSqlRelationalDelegate(self.parent.Bview))
         self.parent.Bview.setColumnHidden(0, True)
+
+    def getEnvTable(self):
+        self.parent.Emodel = QSqlRelationalTableModel()
+        self.parent.Emodel.setTable("Envelopes")
+        self.parent.Emodel.setEditStrategy(QSqlTableModel.OnRowChange)
+        self.parent.Emodel.select()
+        self.parent.Eview = QTableView()
+        self.parent.Eview.setModel(self.parent.Emodel)
+        self.parent.Eview.setItemDelegate(QSqlRelationalDelegate(self.parent.Eview))
+        self.parent.Eview.setColumnHidden(0, True)
