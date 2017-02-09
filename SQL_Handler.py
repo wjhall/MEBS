@@ -12,7 +12,7 @@ class SQL_Handler():
         self.parent = parent
         self.dbpath = dbpath
         self.selectedAcc = 0
-        self.selectedMonth = datetime.date(2017, 01, 01)
+        self.selectedMonth = datetime.date(2017, 01, 01).strftime("%Y-%m")
         self.db = QSqlDatabase.addDatabase("QSQLITE")
         self.db.setDatabaseName(self.dbpath)
         self.db.open()
@@ -130,8 +130,10 @@ class SQL_Handler():
     def getBudgetTable(self):
         self.parent.Bmodel = QSqlRelationalTableModel()
         self.parent.Bmodel.setTable("Budget")
+        self.parent.Bmodel.setRelation(2, QSqlRelation("Envelopes", "ID", "subcategory"))
         self.parent.Bmodel.setEditStrategy(QSqlTableModel.OnRowChange)
         self.parent.Bmodel.select()
+        self.parent.Bmodel.setFilter("theMonth='{}'".format(self.selectedMonth))
         self.parent.Bview = QTableView()
         self.parent.Bview.setModel(self.parent.Bmodel)
         self.parent.Bview.setItemDelegate(QSqlRelationalDelegate(self.parent.Bview))

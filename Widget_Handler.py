@@ -46,6 +46,12 @@ class Widget_Handler():
     def getTabBar(self):
         tabs = QTabWidget(self.parent)
 
+        tabs.addTab(self.TransTab(), "Transactions")
+        tabs.addTab(self.BudgetTab(), "Budget")
+        tabs.addTab(QLabel("foo"), "Reports")
+        return tabs
+
+    def TransTab(self):
         topLayout = QVBoxLayout()
         self.parent.SQL.getTransTable()
         topLayout.addWidget(self.parent.Tview)
@@ -83,9 +89,8 @@ class Widget_Handler():
 
         transWidg = QWidget(self.parent)
         transWidg.setLayout(mainLayout)
-        tabs.addTab(transWidg, "Transactions")
+        return transWidg
 
+    def BudgetTab(self):
         self.parent.SQL.getBudgetTable()
-        tabs.addTab(self.parent.Bview, "Budget")
-        tabs.addTab(QLabel("foo"), "Reports")
-        return tabs
+        return self.parent.Bview
