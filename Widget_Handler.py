@@ -127,8 +127,35 @@ class Widget_Handler():
         topLayout = QVBoxLayout()
         self.parent.SQL.getEnvTable()
         topLayout.addWidget(self.parent.Eview)
+
+        bottomLayout = QHBoxLayout()
+        button = QPushButton("Add Category")
+        button.clicked.connect(partial(self.parent.Emodel.insertRow, 1))
+        bottomLayout.addWidget(button)
+
+        button = QPushButton("Save Changes")
+
+        def saveChanges():
+            self.parent.Emodel.submitAll()
+            self.parent.drawHome()
+        button.clicked.connect(saveChanges)
+        bottomLayout.addWidget(button)
+
+        button = QPushButton("Delete Category")
+
+        def delRow():
+            rows = sorted(set(index.row() for index in
+                              self.parent.Eview.selectedIndexes()))
+            for row in rows:
+                self.parent.Emodel.removeRow(row)
+            self.parent.SQL.updateBudgetValues()
+            self.parent.drawHome()
+        button.clicked.connect(delRow)
+        bottomLayout.addWidget(button)
+
         mainLayout = QVBoxLayout()
         mainLayout.addLayout(topLayout)
+        mainLayout.addLayout(bottomLayout)
         EnvWidg = QWidget(self.parent)
         EnvWidg.setLayout(mainLayout)
         return EnvWidg

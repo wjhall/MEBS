@@ -104,6 +104,7 @@ class SQL_Handler():
 
     def updateBudgetValues(self):
         query = [QSqlQuery(i, self.db) for i in stmt.updateBudgetValues]
+        return
 
     def getAccounts(self):
         accounts = []
